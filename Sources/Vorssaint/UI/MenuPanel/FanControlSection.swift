@@ -12,6 +12,7 @@ struct FanControlSection: View {
     @AppStorage(DefaultsKey.fanControlCurves) private var curvesStorage =
         FanControlConfiguration.defaultCurvesStorage
     @AppStorage(DefaultsKey.fanControlResume) private var resume = false
+    @AppStorage(DefaultsKey.fanControlGameModeBoost) private var gameModeBoost = false
     @AppStorage(DefaultsKey.temperatureUnit) private var temperatureUnit =
         TemperatureUnit.celsius.rawValue
     var collapsible = true
@@ -34,6 +35,8 @@ struct FanControlSection: View {
                                   coolingLevel: $coolingLevel,
                                   curves: curvesBinding,
                                   resume: $resume,
+                                  gameModeBoost: $gameModeBoost,
+                                  isGameModeBoostActive: service.isGameModeBoostActive,
                                   temperatureUnit: displayTemperatureUnit,
                                   authorize: service.authorize,
                                   applyConfiguration: service.applyConfiguration,
@@ -42,6 +45,7 @@ struct FanControlSection: View {
                 .onAppear { service.panelDidAppear() }
                 .onDisappear { service.panelDidDisappear() }
                 .onChange(of: resume) { _, _ in service.resumePreferenceDidChange() }
+                .onChange(of: gameModeBoost) { _, _ in service.gameModePreferenceDidChange() }
         }
     }
 
@@ -83,6 +87,8 @@ struct FanControlCardContent: View {
     @Binding var coolingLevel: Int
     @Binding var curves: [FanControlCurve]
     @Binding var resume: Bool
+    @Binding var gameModeBoost: Bool
+    let isGameModeBoostActive: Bool
     let temperatureUnit: TemperatureUnit
     let authorize: () -> Void
     let applyConfiguration: (FanControlConfiguration) -> Void
@@ -139,6 +145,21 @@ struct FanControlCardContent: View {
                     .font(.system(size: 10.5, weight: .medium))
                     .toggleStyle(.switch)
                     .controlSize(.mini)
+            }
+
+            if canConfigure {
+                VStack(alignment: .leading, spacing: 2) {
+                    Toggle(strings.gameModeBoost, isOn: $gameModeBoost)
+                        .font(.system(size: 10.5, weight: .medium))
+                        .toggleStyle(.switch)
+                        .controlSize(.mini)
+                    if gameModeBoost {
+                        Text(strings.gameModeBoostCaption)
+                            .font(.system(size: 9.5))
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
             }
 
             if controlsCanAppear {
@@ -330,6 +351,9 @@ struct FanControlCardContent: View {
 
     private var statusText: String {
         guard snapshot.isCooling else { return strings.systemControl }
+        if isGameModeBoostActive {
+            return "\(strings.gameModeActive) · \(FanControlPolicy.maximumCoolingLevel)%"
+        }
         let level = snapshot.coolingLevel ?? FanControlPolicy.defaultCoolingLevel
         switch snapshot.configuration?.mode ?? .manual {
         case .system:

@@ -47,6 +47,9 @@ struct FanControlFeatureStrings {
     let hottestGPU: String
     let helperUnavailable: String
     let resumeAfterRestart: String
+    let gameModeBoost: String
+    let gameModeBoostCaption: String
+    let gameModeActive: String
 }
 
 extension FeatureStrings {
@@ -115,7 +118,10 @@ extension FanControlFeatureStrings {
         hottestCPU: "Hottest CPU",
         hottestGPU: "Hottest GPU",
         helperUnavailable: "The protected fan controller is unavailable. Allow Vorssaint in Login Items, then try again.",
-        resumeAfterRestart: "Resume after restart or sleep"
+        resumeAfterRestart: "Resume after restart or sleep",
+        gameModeBoost: "Turn fans to 100% when Game Mode is on",
+        gameModeBoostCaption: "Runs while a game is full screen, then goes back to what was running before.",
+        gameModeActive: "Game Mode"
     )
 
     static let ptBR = FanControlFeatureStrings(
@@ -161,7 +167,10 @@ extension FanControlFeatureStrings {
         hottestCPU: "CPU mais quente",
         hottestGPU: "GPU mais quente",
         helperUnavailable: "O controlador protegido das ventoinhas não está disponível. Permita o Vorssaint nos Itens de Início e tente novamente.",
-        resumeAfterRestart: "Retomar depois de reiniciar ou repousar"
+        resumeAfterRestart: "Retomar depois de reiniciar ou repousar",
+        gameModeBoost: "Ventoinhas a 100% com o Modo de Jogo ativo",
+        gameModeBoostCaption: "Atua enquanto um jogo está em ecrã completo e depois volta ao que estava antes.",
+        gameModeActive: "Modo de Jogo"
     )
 
     static let tr = FanControlFeatureStrings(
@@ -207,7 +216,10 @@ extension FanControlFeatureStrings {
         hottestCPU: "En sıcak CPU",
         hottestGPU: "En sıcak GPU",
         helperUnavailable: "Korumalı fan denetleyicisi kullanılamıyor. Giriş Öğeleri’nde Vorssaint’e izin verip yeniden deneyin.",
-        resumeAfterRestart: "Yeniden başlatma veya uykudan sonra sürdür"
+        resumeAfterRestart: "Yeniden başlatma veya uykudan sonra sürdür",
+        gameModeBoost: "Oyun Modu açıkken fanları %100'e çıkar",
+        gameModeBoostCaption: "Bir oyun tam ekrandayken çalışır, sonra önceki ayara döner.",
+        gameModeActive: "Oyun Modu"
     )
 
     static let ru = FanControlFeatureStrings(
@@ -253,7 +265,10 @@ extension FanControlFeatureStrings {
         hottestCPU: "Самая горячая CPU",
         hottestGPU: "Самая горячая GPU",
         helperUnavailable: "Защищённый контроллер вентиляторов недоступен. Разрешите Vorssaint в Объектах входа и повторите попытку.",
-        resumeAfterRestart: "Возобновлять после перезагрузки или сна"
+        resumeAfterRestart: "Возобновлять после перезагрузки или сна",
+        gameModeBoost: "Вентиляторы на 100% в игровом режиме",
+        gameModeBoostCaption: "Работает, пока игра в полноэкранном режиме, затем возвращает прежний режим.",
+        gameModeActive: "Игровой режим"
     )
 
     static let es = FanControlFeatureStrings(
@@ -299,7 +314,10 @@ extension FanControlFeatureStrings {
         hottestCPU: "CPU más caliente",
         hottestGPU: "GPU más caliente",
         helperUnavailable: "El controlador protegido de los ventiladores no está disponible. Permite Vorssaint en Ítems de inicio e inténtalo de nuevo.",
-        resumeAfterRestart: "Reanudar tras reiniciar o salir del reposo"
+        resumeAfterRestart: "Reanudar tras reiniciar o salir del reposo",
+        gameModeBoost: "Ventiladores al 100 % con el Modo Juego activado",
+        gameModeBoostCaption: "Actúa mientras un juego está a pantalla completa y luego vuelve a lo anterior.",
+        gameModeActive: "Modo Juego"
     )
 
     static let sk = FanControlFeatureStrings(
@@ -345,7 +363,10 @@ extension FanControlFeatureStrings {
         hottestCPU: "Najteplejší CPU",
         hottestGPU: "Najteplejší GPU",
         helperUnavailable: "Chránený ovládač ventilátorov nie je dostupný. Povoľte Vorssaint v časti Položky a rozšírenia spúšťané pri prihlásení a skúste to znova.",
-        resumeAfterRestart: "Pokračovať po reštarte alebo spánku"
+        resumeAfterRestart: "Pokračovať po reštarte alebo spánku",
+        gameModeBoost: "Ventilátory na 100 % v hernom režime",
+        gameModeBoostCaption: "Funguje, kým je hra na celej obrazovke, potom sa vráti k predchádzajúcemu nastaveniu.",
+        gameModeActive: "Herný režim"
     )
 
     static let de = FanControlFeatureStrings(
@@ -391,7 +412,10 @@ extension FanControlFeatureStrings {
         hottestCPU: "Heißeste CPU",
         hottestGPU: "Heißeste GPU",
         helperUnavailable: "Die geschützte Lüftersteuerung ist nicht verfügbar. Erlaube Vorssaint unter Anmeldeobjekte und versuche es erneut.",
-        resumeAfterRestart: "Nach Neustart oder Ruhezustand fortsetzen"
+        resumeAfterRestart: "Nach Neustart oder Ruhezustand fortsetzen",
+        gameModeBoost: "Lüfter bei aktivem Spielmodus auf 100 %",
+        gameModeBoostCaption: "Gilt, solange ein Spiel im Vollbild läuft, danach gilt wieder die vorherige Einstellung.",
+        gameModeActive: "Spielmodus"
     )
 
     static let fr = FanControlFeatureStrings(
@@ -437,7 +461,10 @@ extension FanControlFeatureStrings {
         hottestCPU: "CPU le plus chaud",
         hottestGPU: "GPU le plus chaud",
         helperUnavailable: "Le contrôleur protégé des ventilateurs est indisponible. Autorisez Vorssaint dans Ouverture, puis réessayez.",
-        resumeAfterRestart: "Reprendre après un redémarrage ou la veille"
+        resumeAfterRestart: "Reprendre après un redémarrage ou la veille",
+        gameModeBoost: "Ventilateurs à 100 % en mode Jeu",
+        gameModeBoostCaption: "S’applique tant qu’un jeu est en plein écran, puis revient au réglage précédent.",
+        gameModeActive: "Mode Jeu"
     )
 
     static let it = FanControlFeatureStrings(
@@ -483,7 +510,10 @@ extension FanControlFeatureStrings {
         hottestCPU: "CPU più calda",
         hottestGPU: "GPU più calda",
         helperUnavailable: "Il controller protetto delle ventole non è disponibile. Consenti Vorssaint negli elementi di login e riprova.",
-        resumeAfterRestart: "Riprendi dopo il riavvio o lo stop"
+        resumeAfterRestart: "Riprendi dopo il riavvio o lo stop",
+        gameModeBoost: "Ventole al 100% con la modalità Gioco attiva",
+        gameModeBoostCaption: "Agisce mentre un gioco è a tutto schermo, poi torna all’impostazione precedente.",
+        gameModeActive: "Modalità Gioco"
     )
 
     static let ja = FanControlFeatureStrings(
@@ -529,7 +559,10 @@ extension FanControlFeatureStrings {
         hottestCPU: "最高CPU",
         hottestGPU: "最高GPU",
         helperUnavailable: "保護されたファンコントローラを利用できません。ログイン項目でVorssaintを許可してから、もう一度お試しください。",
-        resumeAfterRestart: "再起動やスリープのあとに再開"
+        resumeAfterRestart: "再起動やスリープのあとに再開",
+        gameModeBoost: "ゲームモード中はファンを100%にする",
+        gameModeBoostCaption: "ゲームがフルスクリーンの間だけ動作し、終了後は元の設定に戻ります。",
+        gameModeActive: "ゲームモード"
     )
 
     static let ko = FanControlFeatureStrings(
@@ -575,7 +608,10 @@ extension FanControlFeatureStrings {
         hottestCPU: "가장 뜨거운 CPU",
         hottestGPU: "가장 뜨거운 GPU",
         helperUnavailable: "보호된 팬 컨트롤러를 사용할 수 없습니다. 로그인 항목에서 Vorssaint를 허용한 다음 다시 시도하세요.",
-        resumeAfterRestart: "재시작 또는 잠자기 후 다시 적용"
+        resumeAfterRestart: "재시작 또는 잠자기 후 다시 적용",
+        gameModeBoost: "게임 모드 중 팬을 100%로 설정",
+        gameModeBoostCaption: "게임이 전체 화면인 동안 작동하고, 이후 이전 설정으로 돌아갑니다.",
+        gameModeActive: "게임 모드"
     )
 
     static let zhHans = FanControlFeatureStrings(
@@ -621,7 +657,10 @@ extension FanControlFeatureStrings {
         hottestCPU: "CPU最高温度",
         hottestGPU: "GPU最高温度",
         helperUnavailable: "受保护的风扇控制器不可用。请在登录项中允许 Vorssaint，然后重试。",
-        resumeAfterRestart: "重新启动或睡眠后恢复"
+        resumeAfterRestart: "重新启动或睡眠后恢复",
+        gameModeBoost: "游戏模式开启时风扇转速调至 100%",
+        gameModeBoostCaption: "游戏全屏时生效，结束后恢复之前的设置。",
+        gameModeActive: "游戏模式"
     )
 
     static let zhTW = FanControlFeatureStrings(
@@ -667,7 +706,10 @@ extension FanControlFeatureStrings {
         hottestCPU: "CPU最高溫度",
         hottestGPU: "GPU最高溫度",
         helperUnavailable: "受保護的風扇控制器無法使用。請在登入項目中允許 Vorssaint，然後再試一次。",
-        resumeAfterRestart: "重新開機或睡眠後恢復"
+        resumeAfterRestart: "重新開機或睡眠後恢復",
+        gameModeBoost: "遊戲模式開啟時將風扇調至 100%",
+        gameModeBoostCaption: "遊戲全螢幕時生效，結束後恢復先前的設定。",
+        gameModeActive: "遊戲模式"
     )
 
     static let zhHK = FanControlFeatureStrings(
@@ -713,7 +755,10 @@ extension FanControlFeatureStrings {
         hottestCPU: "CPU最高溫度",
         hottestGPU: "GPU最高溫度",
         helperUnavailable: "受保護的風扇控制器無法使用。請在登入項目允許 Vorssaint，然後再試一次。",
-        resumeAfterRestart: "重新啟動或睡眠後恢復"
+        resumeAfterRestart: "重新啟動或睡眠後恢復",
+        gameModeBoost: "遊戲模式開啟時將風扇調至 100%",
+        gameModeBoostCaption: "遊戲全螢幕時生效，結束後恢復先前的設定。",
+        gameModeActive: "遊戲模式"
     )
     static let uk = FanControlFeatureStrings(
         title: "Керування вентиляторами",
@@ -758,6 +803,9 @@ extension FanControlFeatureStrings {
         hottestCPU: "Найгарячіший CPU",
         hottestGPU: "Найгарячіший GPU",
         helperUnavailable: "Захищений контролер вентиляторів недоступний. Дозвольте Vorssaint у розділі «Автозапуск» і спробуйте знову.",
-        resumeAfterRestart: "Відновлювати після перезавантаження або сну"
+        resumeAfterRestart: "Відновлювати після перезавантаження або сну",
+        gameModeBoost: "Вентилятори на 100% в ігровому режимі",
+        gameModeBoostCaption: "Працює, поки гра на весь екран, потім повертає попередній режим.",
+        gameModeActive: "Ігровий режим"
     )
 }

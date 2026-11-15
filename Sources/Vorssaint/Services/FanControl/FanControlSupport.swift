@@ -483,3 +483,24 @@ enum SMCValueCodec {
         }
     }
 }
+
+/// The pure half of Game Mode detection, kept apart from AppKit for tests.
+enum GameModePolicy {
+    /// macOS treats an app as a game when it opts in with `LSSupportsGameMode`
+    /// or files itself under a games category; an explicit opt-out wins.
+    static func declaresGame(supportsGameMode: Bool?, category: String?) -> Bool {
+        if let supportsGameMode { return supportsGameMode }
+        guard let category = category?.lowercased() else { return false }
+        return category.hasPrefix("public.app-category.") && category.hasSuffix("games")
+    }
+
+    /// A full-screen window fills its display exactly, menu bar and all.
+    static func windowCoversScreen(_ window: CGRect, screen: CGRect,
+                                   tolerance: CGFloat = 1) -> Bool {
+        guard screen.width > 0, screen.height > 0 else { return false }
+        return abs(window.minX - screen.minX) <= tolerance
+            && abs(window.minY - screen.minY) <= tolerance
+            && abs(window.width - screen.width) <= tolerance
+            && abs(window.height - screen.height) <= tolerance
+    }
+}

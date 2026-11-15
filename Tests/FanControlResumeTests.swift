@@ -46,6 +46,20 @@ enum FanControlResumeContract {
         func restoreThenUnregister() { events.append("unregister") }
         func refresh() { events.append("refresh") }
         func stopObservingSystemState() { observing = false }
+        var isGameModeBoostActive = false
+        var configurationBeforeGameMode: FanControlConfiguration?
+        func endGameModeBoostWithoutRestoring() {
+            isGameModeBoostActive = false
+            configurationBeforeGameMode = nil
+        }
+        func gameModePreferenceDidChange() {}
+        func startGameModeBoost() { events.append("game mode boost") }
+    }
+    /// Game Mode detection reads the screen; resume never depends on it.
+    final class GameModeMonitor {
+        static let shared = GameModeMonitor()
+        var isActive = false
+        func stop() { isActive = false }
     }
 
     static func run(_ suite: TestSuite) {
@@ -71,6 +85,8 @@ enum FanControlResumeContract {
             service.observing = true
             service.applied = []
             service.events = []
+            service.endGameModeBoostWithoutRestoring()
+            GameModeMonitor.shared.isActive = false
         }
         var storedResume: String? { defaults.string(forKey: DefaultsKey.fanControlResumeConfiguration) }
 
@@ -171,6 +187,51 @@ enum FanControlResumeContract {
         service.syncWithPreferences()
         suite.expect(storedResume == nil && service.events == ["unregister"],
                      "removing the feature forgets the kept control before unregistering the helper")
+
+        reset()
+        let curve = FanControlConfiguration.curve([FanControlConfiguration.defaultCurve])
+        service.isGameModeBoostActive = true
+        service.configurationBeforeGameMode = curve
+        service.resumePreferenceDidChange()
+        suite.expect(storedResume == FanControlConfiguration.encodeResume(curve),
+                     "turning resume on during Game Mode keeps the user's control, not the boost")
+        reset()
+        service.isGameModeBoostActive = true
+        service.resumePreferenceDidChange()
+        suite.expect(storedResume == nil,
+                     "a Game Mode boost over System control is never kept for resume")
+        reset()
+        service.isGameModeBoostActive = true
+        GameModeMonitor.shared.isActive = true
+        service.workspaceDidWake()
+        suite.expect(service.applied.isEmpty && service.events == ["game mode boost"],
+                     "waking mid-game puts the boost back instead of the kept control")
+        reset()
+        service.isGameModeBoostActive = true
+        service.returnToSystem()
+        suite.expect(!service.isGameModeBoostActive,
+                     "returning to System cancels a Game Mode boost")
+
+        suite.expect(GameModePolicy.declaresGame(supportsGameMode: nil,
+                                                 category: "public.app-category.action-games"),
+                     "a games category marks a game")
+        suite.expect(GameModePolicy.declaresGame(supportsGameMode: nil,
+                                                 category: "public.app-category.games"),
+                     "the plain games category marks a game")
+        suite.expect(!GameModePolicy.declaresGame(supportsGameMode: nil,
+                                                  category: "public.app-category.productivity"),
+                     "other categories are not games")
+        suite.expect(!GameModePolicy.declaresGame(supportsGameMode: false,
+                                                  category: "public.app-category.games"),
+                     "an explicit Game Mode opt-out wins over the category")
+        suite.expect(GameModePolicy.declaresGame(supportsGameMode: true, category: nil),
+                     "an explicit Game Mode opt-in marks a game")
+        let screen = CGRect(x: 0, y: 0, width: 1512, height: 982)
+        suite.expect(GameModePolicy.windowCoversScreen(screen, screen: screen),
+                     "a window filling the display is full screen")
+        suite.expect(!GameModePolicy.windowCoversScreen(CGRect(x: 0, y: 33, width: 1512, height: 949),
+                                                        screen: screen),
+                     "a maximized window below the menu bar is not full screen")
         reset()
     }
 }

@@ -19,6 +19,8 @@ final class FanControlService: ObservableObject {
     @Published private(set) var snapshot: FanControlSnapshot = .empty
     @Published private(set) var error: FanControlErrorCode?
     @Published private(set) var isWorking = false
+    /// True while Game Mode holds the fans at 100%.
+    @Published private(set) var isGameModeBoostActive = false
 
     private let probeQueue = DispatchQueue(label: "com.vorssaint.fan-control.probe",
                                            qos: .utility)
@@ -31,6 +33,9 @@ final class FanControlService: ObservableObject {
     private var tickCount = 0
     private var registrationAttemptedVersion: String?
     private var observingWorkspace = false
+    /// The manual speed or curve that was running when Game Mode began, put
+    /// back when it ends. Nil means the fans were with the system.
+    private var configurationBeforeGameMode: FanControlConfiguration?
 
     private static var appService: SMAppService {
         SMAppService.daemon(plistName: FanControlIdentifiers.plistName)
@@ -66,8 +71,11 @@ final class FanControlService: ObservableObject {
             }
         } else {
             UserDefaults.standard.removeObject(forKey: DefaultsKey.fanControlResumeConfiguration)
+            endGameModeBoostWithoutRestoring()
+            GameModeMonitor.shared.stop()
             restoreThenUnregister()
         }
+        gameModePreferenceDidChange()
     }
 
     func panelDidAppear() {
@@ -127,7 +135,14 @@ final class FanControlService: ObservableObject {
         startTimerIfNeeded()
     }
 
+    /// A speed or curve the user chose. It replaces a Game Mode boost, so the
+    /// end of Game Mode does not undo it.
     func applyConfiguration(_ configuration: FanControlConfiguration) {
+        endGameModeBoostWithoutRestoring()
+        applyConfiguration(configuration, remember: true)
+    }
+
+    private func applyConfiguration(_ configuration: FanControlConfiguration, remember: Bool) {
         guard FanControlPolicy.validConfiguration(configuration) else {
             error = .controlFailed
             return
@@ -159,7 +174,7 @@ final class FanControlService: ObservableObject {
             }
             self.apply(response)
             if response.succeeded, response.snapshot.isCooling {
-                self.rememberForResume(configuration)
+                if remember { self.rememberForResume(configuration) }
                 self.startTimerIfNeeded()
             } else {
                 self.restoreAutomatic(supersedingCurrentRequest: false,
@@ -175,6 +190,7 @@ final class FanControlService: ObservableObject {
 
     /// The user's own return to System, the one stop a resume must honor.
     func returnToSystem() {
+        endGameModeBoostWithoutRestoring()
         UserDefaults.standard.removeObject(forKey: DefaultsKey.fanControlResumeConfiguration)
         restoreAutomatic()
     }
@@ -327,7 +343,13 @@ final class FanControlService: ObservableObject {
         }
         // Only the control running now is kept, never an older one left
         // behind, for example by a restored backup.
-        if snapshot.isCooling, let configuration = snapshot.configuration {
+        if isGameModeBoostActive {
+            if let configuration = configurationBeforeGameMode {
+                rememberForResume(configuration)
+            } else {
+                UserDefaults.standard.removeObject(forKey: DefaultsKey.fanControlResumeConfiguration)
+            }
+        } else if snapshot.isCooling, let configuration = snapshot.configuration {
             rememberForResume(configuration)
         } else {
             UserDefaults.standard.removeObject(forKey: DefaultsKey.fanControlResumeConfiguration)
@@ -368,6 +390,56 @@ final class FanControlService: ObservableObject {
         guard UserDefaults.standard.bool(forKey: DefaultsKey.fanControlResume),
               let stored = FanControlConfiguration.encodeResume(configuration) else { return }
         UserDefaults.standard.set(stored, forKey: DefaultsKey.fanControlResumeConfiguration)
+    }
+
+    // MARK: - Game Mode
+
+    static func startGameModeWatchIfNeeded() {
+        shared.gameModePreferenceDidChange()
+    }
+
+    /// Starts or stops watching for Game Mode to match the setting. Turning the
+    /// setting off mid-game hands the fans back at once.
+    func gameModePreferenceDidChange() {
+        let monitor = GameModeMonitor.shared
+        guard AppFeature.fanControl.isAvailable,
+              UserDefaults.standard.bool(forKey: DefaultsKey.fanControlGameModeBoost) else {
+            monitor.stop()
+            endGameModeBoost()
+            return
+        }
+        monitor.onChange = { [weak self] active in
+            if active { self?.startGameModeBoost() } else { self?.endGameModeBoost() }
+        }
+        monitor.start()
+    }
+
+    private func startGameModeBoost() {
+        refreshAccessState()
+        // Like a resume, a boost never asks for approval: without an enabled
+        // helper the fans stay as they are.
+        guard accessState == .enabled, !Self.helperAwaitsRegistration else { return }
+        if !isGameModeBoostActive {
+            configurationBeforeGameMode = snapshot.isCooling ? snapshot.configuration : nil
+            isGameModeBoostActive = true
+        }
+        applyConfiguration(.manual(level: FanControlPolicy.maximumCoolingLevel), remember: false)
+    }
+
+    private func endGameModeBoost() {
+        guard isGameModeBoostActive else { return }
+        let previous = configurationBeforeGameMode
+        endGameModeBoostWithoutRestoring()
+        if let previous {
+            applyConfiguration(previous, remember: true)
+        } else {
+            restoreAutomatic(supersedingCurrentRequest: true)
+        }
+    }
+
+    private func endGameModeBoostWithoutRestoring() {
+        isGameModeBoostActive = false
+        configurationBeforeGameMode = nil
     }
 
     // MARK: - Requests
@@ -680,6 +752,10 @@ final class FanControlService: ObservableObject {
     }
 
     @objc private func workspaceDidWake() {
+        if isGameModeBoostActive, GameModeMonitor.shared.isActive {
+            startGameModeBoost()
+            return
+        }
         if let configuration = Self.resumableConfiguration, resume(configuration) { return }
         if UserDefaults.standard.bool(forKey: DefaultsKey.fanControlRecoveryNeeded) {
             restoreAutomatic(supersedingCurrentRequest: true)

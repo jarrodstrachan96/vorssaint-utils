@@ -456,6 +456,9 @@ enum DefaultsKey {
     static let fanControlCurves = "fanControlCurves"
     // Re-apply the last manual speed or curve when the app opens and after wake.
     static let fanControlResume = "fanControlResume"
+    // Run the fans at 100% while macOS Game Mode is on, then hand back
+    // whatever was running before.
+    static let fanControlGameModeBoost = "fanControlGameModeBoost"
     // Machine-only: the control the user left running while resume is on,
     // cleared when they return to System so it never outlives that choice.
     static let fanControlResumeConfiguration = "fanControlResumeConfiguration"
@@ -1737,6 +1740,7 @@ enum Defaults {
         DefaultsKey.fanControlCoolingLevel: FanControlPolicy.defaultCoolingLevel,
         DefaultsKey.fanControlCurves: FanControlConfiguration.defaultCurvesStorage,
         DefaultsKey.fanControlResume: false,
+        DefaultsKey.fanControlGameModeBoost: false,
         DefaultsKey.fanControlResumeConfiguration: "",
         DefaultsKey.fanControlRecoveryNeeded: false,
         DefaultsKey.fanControlHelperVersion: "",
