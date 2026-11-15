@@ -48,6 +48,7 @@ enum FanControlResumeContract {
         func stopObservingSystemState() { observing = false }
         var isGameModeBoostActive = false
         var configurationBeforeGameMode: FanControlConfiguration?
+        var userConfiguration: FanControlConfiguration?
         func endGameModeBoostWithoutRestoring() {
             isGameModeBoostActive = false
             configurationBeforeGameMode = nil
@@ -87,6 +88,7 @@ enum FanControlResumeContract {
             service.events = []
             service.endGameModeBoostWithoutRestoring()
             GameModeMonitor.shared.isActive = false
+            service.userConfiguration = nil
         }
         var storedResume: String? { defaults.string(forKey: DefaultsKey.fanControlResumeConfiguration) }
 
@@ -208,9 +210,10 @@ enum FanControlResumeContract {
                      "waking mid-game puts the boost back instead of the kept control")
         reset()
         service.isGameModeBoostActive = true
+        service.userConfiguration = manual
         service.returnToSystem()
-        suite.expect(!service.isGameModeBoostActive,
-                     "returning to System cancels a Game Mode boost")
+        suite.expect(!service.isGameModeBoostActive && service.userConfiguration == nil,
+                     "returning to System cancels a Game Mode boost and forgets the user's control")
 
         suite.expect(GameModePolicy.declaresGame(supportsGameMode: nil,
                                                  category: "public.app-category.action-games"),

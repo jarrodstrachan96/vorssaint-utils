@@ -36,6 +36,16 @@ final class FanControlService: ObservableObject {
     /// The manual speed or curve that was running when Game Mode began, put
     /// back when it ends. Nil means the fans were with the system.
     private var configurationBeforeGameMode: FanControlConfiguration?
+    /// The speed or curve the user last chose (or resumed), nil after a return
+    /// to System. The helper's snapshot can still show a boost whose restore
+    /// is in flight, so this, not the snapshot, says what to go back to.
+    private var userConfiguration: FanControlConfiguration?
+    /// Game Mode must stay off this long before the fans are handed back, so
+    /// a game flickering out of full screen while it loads doesn't count.
+    private var gameModeEndWork: DispatchWorkItem?
+    private static let gameModeEndDelay: TimeInterval = 3
+    private static let gameModeBoostConfiguration =
+        FanControlConfiguration.manual(level: FanControlPolicy.maximumCoolingLevel)
 
     private static var appService: SMAppService {
         SMAppService.daemon(plistName: FanControlIdentifiers.plistName)
@@ -139,6 +149,7 @@ final class FanControlService: ObservableObject {
     /// end of Game Mode does not undo it.
     func applyConfiguration(_ configuration: FanControlConfiguration) {
         endGameModeBoostWithoutRestoring()
+        userConfiguration = configuration
         applyConfiguration(configuration, remember: true)
     }
 
@@ -191,6 +202,7 @@ final class FanControlService: ObservableObject {
     /// The user's own return to System, the one stop a resume must honor.
     func returnToSystem() {
         endGameModeBoostWithoutRestoring()
+        userConfiguration = nil
         UserDefaults.standard.removeObject(forKey: DefaultsKey.fanControlResumeConfiguration)
         restoreAutomatic()
     }
@@ -404,12 +416,27 @@ final class FanControlService: ObservableObject {
         let monitor = GameModeMonitor.shared
         guard AppFeature.fanControl.isAvailable,
               UserDefaults.standard.bool(forKey: DefaultsKey.fanControlGameModeBoost) else {
+            gameModeEndWork?.cancel()
+            gameModeEndWork = nil
             monitor.stop()
             endGameModeBoost()
             return
         }
         monitor.onChange = { [weak self] active in
-            if active { self?.startGameModeBoost() } else { self?.endGameModeBoost() }
+            guard let self else { return }
+            self.gameModeEndWork?.cancel()
+            self.gameModeEndWork = nil
+            guard !active else {
+                self.startGameModeBoost()
+                return
+            }
+            let work = DispatchWorkItem { [weak self] in
+                self?.gameModeEndWork = nil
+                guard GameModeMonitor.shared.isActive == false else { return }
+                self?.endGameModeBoost()
+            }
+            self.gameModeEndWork = work
+            DispatchQueue.main.asyncAfter(deadline: .now() + Self.gameModeEndDelay, execute: work)
         }
         monitor.start()
     }
@@ -420,10 +447,12 @@ final class FanControlService: ObservableObject {
         // helper the fans stay as they are.
         guard accessState == .enabled, !Self.helperAwaitsRegistration else { return }
         if !isGameModeBoostActive {
-            configurationBeforeGameMode = snapshot.isCooling ? snapshot.configuration : nil
+            // Never the snapshot's configuration: right after a boost ends it
+            // can still read 100% until the restore lands.
+            configurationBeforeGameMode = snapshot.isCooling ? userConfiguration : nil
             isGameModeBoostActive = true
         }
-        applyConfiguration(.manual(level: FanControlPolicy.maximumCoolingLevel), remember: false)
+        applyConfiguration(Self.gameModeBoostConfiguration, remember: false)
     }
 
     private func endGameModeBoost() {
@@ -438,8 +467,32 @@ final class FanControlService: ObservableObject {
     }
 
     private func endGameModeBoostWithoutRestoring() {
+        gameModeEndWork?.cancel()
+        gameModeEndWork = nil
         isGameModeBoostActive = false
         configurationBeforeGameMode = nil
+    }
+
+    /// True when the helper still holds a Game Mode boost nobody wants: the
+    /// boost has ended, no game is full screen, and 100% isn't the user's own
+    /// choice. A failed or lost restore otherwise stays put, because every
+    /// heartbeat keeps the helper's control alive.
+    private var gameModeBoostIsOrphaned: Bool {
+        !isGameModeBoostActive
+            && gameModeEndWork == nil
+            && !GameModeMonitor.shared.isActive
+            && snapshot.isCooling
+            && snapshot.configuration == Self.gameModeBoostConfiguration
+            && userConfiguration != Self.gameModeBoostConfiguration
+            && UserDefaults.standard.bool(forKey: DefaultsKey.fanControlGameModeBoost)
+    }
+
+    private func releaseOrphanedGameModeBoost() {
+        if let userConfiguration {
+            applyConfiguration(userConfiguration, remember: false)
+        } else {
+            restoreAutomatic(supersedingCurrentRequest: false)
+        }
     }
 
     // MARK: - Requests
@@ -520,6 +573,10 @@ final class FanControlService: ObservableObject {
 
     private func heartbeat() {
         guard snapshot.isCooling, !requestInFlight, !isWorking else { return }
+        if gameModeBoostIsOrphaned {
+            releaseOrphanedGameModeBoost()
+            return
+        }
         let generation = beginRequest()
         send { proxy, reply in proxy.heartbeat(withReply: reply) } completion: { response in
             guard self.finishRequest(generation) else { return }
